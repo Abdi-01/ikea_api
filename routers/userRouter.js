@@ -3,7 +3,8 @@ const { userController } = require('../controllers')
 const router = express.Router()
 
 router.get('/get-all', userController.getUsers)
-router.get('/login', userController.login)
+router.post('/login', userController.login)
+router.post('/keep', userController.keeplogin)
 router.post('/regis', userController.register)
 
 module.exports = router
