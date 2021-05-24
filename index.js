@@ -19,7 +19,8 @@ app.get('/', (req, res) => {
     res.status(200).send('<h2>IKEA API</h2>')
 })
 
-const { userRouter } = require('./routers')
+const { userRouter, productRouter } = require('./routers')
 app.use('/users', userRouter)
+app.use('/products', productRouter)
 
 app.listen(PORT, () => console.log('IKEA API Running :', PORT))
