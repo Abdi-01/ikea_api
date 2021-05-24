@@ -3,14 +3,15 @@ const { db } = require('../config/database')
 module.exports = {
     getProducts: (req, res) => {
         let dataSearch = [], getSQL, getImage = `Select * from product_image`;
+        let getStock = 'Select * from product_stock ps JOIN status s on ps.idstatus = s.idstatus; '
         for (let prop in req.query) {
             dataSearch.push(`${prop} = ${db.escape(req.query[prop])}`)
         }
 
         if (dataSearch.length > 0) {
-            getSQL = `Select * from products Where ${dataSearch.join(' AND ')};`
+            getSQL = `Select * from products p JOIN status s on p.idstatus = s.idstatus Where ${dataSearch.join(' AND ')};`
         } else {
-            getSQL = `Select * from products`
+            getSQL = `Select * from products p JOIN status s on p.idstatus = s.idstatus;`
         }
 
         db.query(getSQL, (err, results) => {
@@ -31,13 +32,33 @@ module.exports = {
                     results_img.forEach(e => {
                         // jika id sama, data results_img akan dimasukkan kedalam properti baru item.images
                         if (item.idproduct == e.idproduct) {
-                            item.images.push(e)
+                            item.images.push(e.images)
                         }
                     })
                 });
 
-                console.log(results)
-                res.status(200).send(results)
+                db.query(getStock, (err_stck, results_stck) => {
+                    if (err_stck) {
+                        res.status(500).send({ status: 'Error Mysql', messages: err_stck })
+                    }
+
+                    results.forEach(item => {
+                        item.stock = []
+                        results_stck.forEach(e => {
+                            if (item.idproduct == e.idproduct) {
+                                item.stock.push({
+                                    idproduct_stock: e.idproduct_stock,
+                                    type: e.type,
+                                    qty: e.qty,
+                                    status: e.status
+                                })
+                            }
+                        })
+                    })
+                    console.log(results)
+                    res.status(200).send(results)
+                })
+
             })
         })
 
