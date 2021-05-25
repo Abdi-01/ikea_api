@@ -11,7 +11,7 @@ module.exports = {
         if (dataSearch.length > 0) {
             getSQL = `Select * from products p JOIN status s on p.idstatus = s.idstatus Where ${dataSearch.join(' AND ')};`
         } else {
-            getSQL = `Select * from products p JOIN status s on p.idstatus = s.idstatus;`
+            getSQL = `Select * from products p JOIN status s on p.idstatus = s.idstatus where p.idstatus=1;`
         }
 
         db.query(getSQL, (err, results) => {
@@ -64,6 +64,57 @@ module.exports = {
 
     },
     addProduct: (req, res) => {
+        console.log(req.body)
 
+        let postProduct = `Insert into products values (null,${db.escape(req.body.nama)},${db.escape(req.body.brand)},
+        ${db.escape(req.body.deskripsi)},${db.escape(req.body.harga)},
+        ${db.escape(req.body.idstatus)});`
+        let postImage = `Insert into product_image values `
+        let postStock = `Insert into product_stock values `
+
+        db.query(postProduct, (err, results) => {
+            if (err) {
+                res.status(500).send({ status: 'Error Mysql', messages: err })
+            }
+
+            console.log("result produk",results)
+            if(results.insertId){
+                // menjalankan insert untuk product_img dan product_stck
+                let dataImg = []
+                req.body.images.forEach(item=>{
+                    dataImg.push(`(null,${results.insertId},${db.escape(item)})`)
+                })
+                let dataStock = []
+                req.body.stock.forEach(item=>{
+                    dataStock.push(`(null,${results.insertId},${db.escape(item.type)},${db.escape(item.qty)},${db.escape(req.body.idstatus)})`)
+                })
+
+                // console.log(postImage + dataImg)
+                // console.log(postStock + dataStock)
+                db.query(postImage+dataImg,(err_img,results_img)=>{
+                    if (err_img) {
+                        res.status(500).send({ status: 'Error Mysql', messages: err_img })
+                    }
+                    db.query(postStock+dataStock,(err_stck,results_stck)=>{
+                        if (err_stck) {
+                            res.status(500).send({ status: 'Error Mysql', messages: err_stck })
+                        }
+
+                        res.status(200).send("Insert product success ✅")
+                    })
+                })
+            }
+        })
+
+    },
+    deleteProduct:(req,res)=>{
+        let delQuery = `Update products set idstatus = 2 where idproduct=${req.query.id};`
+        db.query(delQuery,(err,results)=>{
+            if (err) {
+                res.status(500).send({ status: 'Error Mysql', messages: err })
+            }
+
+            res.status(200).send("Delete product success ✅")
+        })
     }
 }
