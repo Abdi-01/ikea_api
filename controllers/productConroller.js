@@ -45,9 +45,7 @@ module.exports = {
             });
             res.status(200).send(get)
         } catch (error) {
-            if (error) {
-                res.status(500).send({ status: 'Error Mysql', messages: error })
-            }
+            res.status(500).send({ status: 'Error Mysql', messages: error })
         }
     },
     addProduct: (req, res) => {
@@ -94,45 +92,40 @@ module.exports = {
         })
 
     },
-    deleteProduct: (req, res) => {
-        let delQuery = `Update products set idstatus = 2 where idproduct=${req.query.id};`
-        db.query(delQuery, (err, results) => {
-            if (err) {
-                res.status(500).send({ status: 'Error Mysql', messages: err })
-            }
-
+    deleteProduct: async (req, res) => {
+        try {
+            await dbQuery(`Update products set idstatus = 2 where idproduct=${req.query.id};`)
             res.status(200).send("Delete product success ✅")
-        })
+        } catch (error) {
+            res.status(500).send({ status: 'Error Mysql', messages: error })
+        }
     },
-    updateProduct: (req, res) => {
-        console.log("data update", req.body)
-        let { idproduct, nama, brand, deskripsi, harga, idstatus, images, stock } = req.body
+    updateProduct: async (req, res) => {
+        try {
+            console.log("data update", req.body)
+            let { idproduct, nama, brand, deskripsi, harga, idstatus, images, stock } = req.body
 
-        // update product_images
-        let updateImages = images.map(item => `Update product_image set images=${db.escape(item.images)} 
-        where idproduct_image=${db.escape(item.idproduct_image)};`)
-        console.log("queryImage", updateImages.join('\n'))
+            // update product_images
+            let updateImages = images.map(item => `Update product_image set images=${db.escape(item.images)} 
+            where idproduct_image=${db.escape(item.idproduct_image)};`)
+            console.log("queryImage", updateImages.join('\n'))
 
-        // update product_stock
-        let updateStocks = stock.map(item => `Update product_stock set type=${db.escape(item.type)},qty=${item.qty} 
-        where idproduct_stock = ${item.idproduct_stock};`)
+            // update product_stock
+            let updateStocks = stock.map(item => `Update product_stock set type=${db.escape(item.type)},qty=${item.qty} 
+            where idproduct_stock = ${item.idproduct_stock};`)
 
-        // update product master
-        let update = `Update products set nama=${db.escape(nama)}, brand=${db.escape(brand)}, deskripsi=${db.escape(deskripsi)},
-        harga=${db.escape(harga)}, idstatus=${db.escape(idstatus)} 
-        where idproduct=${db.escape(idproduct)};
-        ${updateImages.join('\n')}
-        ${updateStocks.join('\n')}`
+            // update product master
+            let update = `Update products set nama=${db.escape(nama)}, brand=${db.escape(brand)}, deskripsi=${db.escape(deskripsi)},
+            harga=${db.escape(harga)}, idstatus=${db.escape(idstatus)} 
+            where idproduct=${db.escape(idproduct)};
+            ${updateImages.join('\n')}
+            ${updateStocks.join('\n')}`
 
-        // console.log(update)
-        db.query(update, (err, results) => {
-            if (err) {
-                res.status(500).send({ status: 'Error Mysql', messages: err })
-            }
-            console.log("Update Product Success ✅", results)
-
+            await dbQuery(update)
             res.status(200).send("Update Product, Stocks and Images Success ✅")
-        })
+        } catch (error) {
+            res.status(500).send({ status: 'Error Mysql', messages: error })
+        }
     }
 }
 
