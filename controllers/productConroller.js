@@ -120,6 +120,42 @@ module.exports = {
     updateProduct: (req, res) => {
         console.log("data update", req.body)
         let { idproduct, nama, brand, deskripsi, harga, idstatus, images, stock } = req.body
+
+        // update product_images
+        let updateImages = images.map(item => `Update product_image set images=${db.escape(item.images)} 
+        where idproduct_image=${db.escape(item.idproduct_image)};`)
+        console.log("queryImage", updateImages.join('\n'))
+
+        // update product_stock
+        let updateStocks = stock.map(item => `Update product_stock set type=${db.escape(item.type)},qty=${item.qty} 
+        where idproduct_stock = ${item.idproduct_stock};`)
+
+        // update product master
+        let update = `Update products set nama=${db.escape(nama)}, brand=${db.escape(brand)}, deskripsi=${db.escape(deskripsi)},
+        harga=${db.escape(harga)}, idstatus=${db.escape(idstatus)} 
+        where idproduct=${db.escape(idproduct)};
+        ${updateImages.join('\n')}
+        ${updateStocks.join('\n')}`
+
+        // console.log(update)
+        db.query(update, (err, results) => {
+            if (err) {
+                res.status(500).send({ status: 'Error Mysql', messages: err })
+            }
+            console.log("Update Product Success ✅", results)
+
+            res.status(200).send("Update Product, Stocks and Images Success ✅")
+        })
+    }
+}
+
+
+
+/**
+ * Backup updateController
+ * updateProduct: (req, res) => {
+        console.log("data update", req.body)
+        let { idproduct, nama, brand, deskripsi, harga, idstatus, images, stock } = req.body
         let update = `Update products set nama=${db.escape(nama)}, brand=${db.escape(brand)}, deskripsi=${db.escape(deskripsi)},
         harga=${db.escape(harga)}, idstatus=${db.escape(idstatus)} where idproduct=${db.escape(idproduct)};`
 
@@ -130,18 +166,18 @@ module.exports = {
             console.log("Update Product Success ✅", results)
 
             // update images dan stock
-            let updateImages = images.map(item => `Update product_image set images=${db.escape(item.images)} 
+            let updateImages = images.map(item => `Update product_image set images=${db.escape(item.images)}
             where idproduct_image=${db.escape(item.idproduct_image)};`)
             console.log("queryImage", updateImages.join('\n'))
 
-            let updateStocks = stock.map(item => `Update product_stock set type=${db.escape(item.type)},qty=${item.qty} 
+            let updateStocks = stock.map(item => `Update product_stock set type=${db.escape(item.type)},qty=${item.qty}
             where idproduct_stock = ${item.idproduct_stock};`)
 
             db.query(updateImages.join('\n'), (err_img, results_img) => {
                 if (err_img) {
                     res.status(500).send({ status: 'Error Mysql', messages: err_img })
                 }
-                
+
                 db.query(updateStocks.join('\n'),(err_stck,results_stck)=>{
                     if (err_stck) {
                         res.status(500).send({ status: 'Error Mysql', messages: err_stck })
@@ -153,4 +189,4 @@ module.exports = {
 
         })
     }
-}
+ */
