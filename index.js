@@ -19,8 +19,15 @@ app.get('/', (req, res) => {
     res.status(200).send('<h2>IKEA API</h2>')
 })
 
-const { userRouter, productRouter } = require('./routers')
+const { userRouter, productRouter, transactionRouter } = require('./routers')
 app.use('/users', userRouter)
 app.use('/products', productRouter)
+app.use('/transaction', transactionRouter)
+
+// error handling
+app.use((error, req, res, next) => {
+    console.log("Handling error", error)
+    res.status(500).send({ status: 'Error Mysql', messages: error })
+})
 
 app.listen(PORT, () => console.log('IKEA API Running :', PORT))
