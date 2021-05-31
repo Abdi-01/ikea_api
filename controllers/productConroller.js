@@ -84,7 +84,7 @@ module.exports = {
             res.status(500).send({ status: 'Error Mysql', messages: error })
         }
     },
-    updateProduct: async (req, res) => {
+    updateProduct: async (req, res,next) => {
         try {
             console.log("data update", req.body)
             let { idproduct, nama, brand, deskripsi, harga, idstatus, images, stock } = req.body
@@ -92,7 +92,7 @@ module.exports = {
             // update product_images
             let updateImages = images.map(item => `Update product_image set images=${db.escape(item.images)} 
             where idproduct_image=${db.escape(item.idproduct_image)};`)
-            console.log("queryImage", updateImages.join('\n'))
+            // console.log("queryImage", updateImages.join('\n'))
 
             // update product_stock
             let updateStocks = stock.map(item => `Update product_stock set type=${db.escape(item.type)},qty=${item.qty} 
@@ -108,7 +108,7 @@ module.exports = {
             await dbQuery(update)
             res.status(200).send("Update Product, Stocks and Images Success ✅")
         } catch (error) {
-            res.status(500).send({ status: 'Error Mysql', messages: error })
+            next(error)
         }
     }
 }
