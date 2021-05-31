@@ -43,6 +43,11 @@ module.exports = {
         }
     },
     deleteCart: async (req, res, next) => {
-
+        try {
+            let queryUpdate = await dbQuery(`Delete from cart where idcart=${req.params.idcart};`)
+            res.status(200).send({ status: "Success✅", results: queryUpdate })
+        } catch (error) {
+            next(error)
+        }
     }
 }
