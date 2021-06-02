@@ -52,7 +52,21 @@ module.exports = {
     },
     getTransaksi: async (req, res, next) => {
         try {
+            let getQuery = `Select * from transactions t join status s on t.idstatus=s.idstatus ${req.params.id>0 && `where iduser=${req.params.id}`};`
+            getQuery = await dbQuery(getQuery)
+            // console.log(getQuery)
 
+            let getDetail = `Select p.nama,p.harga,ps.type,td.* from transaction_detail td join products p on td.idproduct = p.idproduct
+            join product_stock ps on ps.idproduct_stock = td.idstock;`
+            getDetail = await dbQuery(getDetail)
+            
+            getQuery.forEach((item)=>{
+                item.transaction_detail = []
+                getDetail.forEach((element)=>{
+                    item.transaction_detail.push(element)
+                })
+            })
+            res.status(200).send({ status: "Success✅", results: getQuery })
         } catch (error) {
             next(error)
         }
@@ -64,15 +78,17 @@ module.exports = {
             let insertQuery = `Insert into transactions set ?`
             insertQuery = await dbQuery(insertQuery, { invoice, iduser, ongkir, total_payment, note, idstatus })
             // console.log("Checkout Success ✅", insertQuery)
+
             let detailQuery = `Insert into transaction_detail (idtransaction,idproduct,idstock,qty) values ?`
             let dataDetail = detail.map(item => [insertQuery.insertId, item.idproduct, item.idstock, item.qty])
-            // console.log(dataDetail)
             detailQuery = await dbQuery(detailQuery, [dataDetail])
             // console.log("Checkout Detail Success ✅",detailQuery)
+
             let deleteCart = `Delete from cart where (idcart,iduser) IN (?) ;`
             let delCart = detail.map(item => [item.idcart, iduser])
             deleteCart = await dbQuery(deleteCart, [delCart])
-            console.log("Checkout Success ✅", detailQuery)
+            // console.log("Checkout Success ✅", detailQuery)
+            res.status(200).send({ success: true, message: "Checkout Success ✅" })
         } catch (error) {
             next(error)
         }

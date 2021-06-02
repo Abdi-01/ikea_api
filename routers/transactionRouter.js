@@ -9,6 +9,6 @@ router.patch('/update-qty', transactionController.updateCartQty)
 
 // API Transaksi
 router.post('/checkout', transactionController.addCheckout)
-router.get('/data', transactionController.getTransaksi)
+router.get('/data/:id', transactionController.getTransaksi)
 
 module.exports = router
