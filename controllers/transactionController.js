@@ -49,5 +49,32 @@ module.exports = {
         } catch (error) {
             next(error)
         }
+    },
+    getTransaksi: async (req, res, next) => {
+        try {
+
+        } catch (error) {
+            next(error)
+        }
+    },
+    addCheckout: async (req, res, next) => {
+        try {
+            console.log(req.body)
+            let { invoice, iduser, ongkir, total_payment, note, idstatus, detail } = req.body
+            let insertQuery = `Insert into transactions set ?`
+            insertQuery = await dbQuery(insertQuery, { invoice, iduser, ongkir, total_payment, note, idstatus })
+            // console.log("Checkout Success ✅", insertQuery)
+            let detailQuery = `Insert into transaction_detail (idtransaction,idproduct,idstock,qty) values ?`
+            let dataDetail = detail.map(item => [insertQuery.insertId, item.idproduct, item.idstock, item.qty])
+            // console.log(dataDetail)
+            detailQuery = await dbQuery(detailQuery, [dataDetail])
+            // console.log("Checkout Detail Success ✅",detailQuery)
+            let deleteCart = `Delete from cart where (idcart,iduser) IN (?) ;`
+            let delCart = detail.map(item => [item.idcart, iduser])
+            deleteCart = await dbQuery(deleteCart, [delCart])
+            console.log("Checkout Success ✅", detailQuery)
+        } catch (error) {
+            next(error)
+        }
     }
 }
