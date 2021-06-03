@@ -52,18 +52,20 @@ module.exports = {
     },
     getTransaksi: async (req, res, next) => {
         try {
-            let getQuery = `Select * from transactions t join status s on t.idstatus=s.idstatus ${req.params.id>0 && `where iduser=${req.params.id}`};`
+            let getQuery = `Select * from transactions t join status s on t.idstatus=s.idstatus ${req.params.id > 0 ? `where t.iduser=${req.params.id}`:' '};`
             getQuery = await dbQuery(getQuery)
             // console.log(getQuery)
 
             let getDetail = `Select p.nama,p.harga,ps.type,td.* from transaction_detail td join products p on td.idproduct = p.idproduct
             join product_stock ps on ps.idproduct_stock = td.idstock;`
             getDetail = await dbQuery(getDetail)
-            
-            getQuery.forEach((item)=>{
+
+            getQuery.forEach((item) => {
                 item.transaction_detail = []
-                getDetail.forEach((element)=>{
-                    item.transaction_detail.push(element)
+                getDetail.forEach((element) => {
+                    if (item.idtransaction == element.idtransaction) {
+                        item.transaction_detail.push(element)
+                    }
                 })
             })
             res.status(200).send({ status: "Success✅", results: getQuery })
@@ -94,3 +96,14 @@ module.exports = {
         }
     }
 }
+
+// Tugas :
+/**
+ * 1. Hubungkan data transaksi dengan page histroy transaction
+ * 2. Tampilkan saja kolom no, tgl, invoice, total payment, status, action
+ * 3. Pada sisi admin tambahkan button Confirm, 
+ *    yg nantinya digunakan untuk merubah status dari UNPAID --> PAID
+ * 4. Pada sisi admin dan user, juga tambahkan button detail utk
+ *    menampilkan modal yang berisi detail transaksi beserta 
+ *    data transaksi lainnya secara lengkap
+ */

@@ -56,8 +56,28 @@ module.exports = {
             let postImage = `Insert into product_image values `
             let postStock = `Insert into product_stock values `
 
+            // get all idcategory dari child->parent
+            let getIdCategory = `WITH RECURSIVE category_path (idcategory, category, parent_id) AS
+            (
+              SELECT idcategory, category, parent_id
+                FROM category
+                WHERE idcategory = ${req.body.idcategory} -- kategory paling bawah yg dipilih
+              UNION ALL
+              SELECT c.idcategory, c.category, c.parent_id
+                FROM category_path AS cp JOIN category AS c
+                  ON cp.parent_id = c.idcategory
+            )
+            SELECT * FROM category_path;`
+
+            getIdCategory = await dbQuery(getIdCategory)
+            console.log(getIdCategory)
+
             postProduct = await dbQuery(postProduct)
             if (postProduct.insertId) {
+                // query untuk insert data ke table product_category
+                getIdCategory =  getIdCategory.map(item=>[postProduct.insertId,item.idcategory])
+
+                await dbQuery(`insert into product_category (idproduct,idcategory) values ?`,[getIdCategory])
                 // menjalankan insert untuk product_img dan product_stck
                 let dataImg = []
                 req.body.images.forEach(item => {
@@ -73,7 +93,7 @@ module.exports = {
                 res.status(200).send("Insert product success ✅")
             }
         } catch (error) {
-            res.status(500).send({ status: 'Error Mysql', messages: err })
+            res.status(500).send({ status: 'Error Mysql', messages: error })
         }
     },
     deleteProduct: async (req, res) => {
@@ -84,7 +104,7 @@ module.exports = {
             res.status(500).send({ status: 'Error Mysql', messages: error })
         }
     },
-    updateProduct: async (req, res,next) => {
+    updateProduct: async (req, res, next) => {
         try {
             console.log("data update", req.body)
             let { idproduct, nama, brand, deskripsi, harga, idstatus, images, stock } = req.body
