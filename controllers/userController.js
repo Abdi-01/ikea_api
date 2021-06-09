@@ -1,4 +1,5 @@
-const { db } = require('../config/database')
+const { db, dbQuery } = require('../config/database')
+const transporter = require('../config/nodemailer')
 
 module.exports = {
     getUsers: (req, res) => {
@@ -60,16 +61,34 @@ module.exports = {
             res.status(500).send({ error: true, messages: "Your params not complete" })
         }
     },
-    register: (req, res) => {
-        // fungsi register
-        let insertSQL = `Insert into users (username,email,password) 
-        values (${db.escape(req.body.username)},${db.escape(req.body.email)},${db.escape(req.body.password)});`
+    register: async (req, res, next) => {
+        try {
+            // fungsi register
+            let insertSQL = `Insert into users (username,email,password) 
+            values (${db.escape(req.body.username)},${db.escape(req.body.email)},${db.escape(req.body.password)});`
 
-        db.query(insertSQL, (err, results) => {
-            if (err) {
-                res.status(500).send({ status: 'Error Mysql Regis', messages: err })
+            insertSQL = await dbQuery(insertSQL)
+
+            let getUser = await dbQuery(`Select * from users where iduser=${insertSQL.insertId}`)
+            let { iduser, username, email, role, idstatus } = getUser[0]
+
+            // Membuat token
+
+            // Membuat config email
+            //1. Konten email
+            let mail = {
+                from:'Admin IKEA <alghifarfn@gmail.com>', //email pengirim, sesuai config nodemailer
+                to:email, //email penerima sesuai data Select dari database
+                subject:'[IKEA-WEB] Verification Email', //subject email
+                html:`<a href='http://localhost:3000'>Verification your email</a>` //isi dari email
             }
-            res.status(200).send(results)
-        })
+            // 2. Konfigurasi transporter
+            await transporter.sendMail(mail)
+
+            res.status(200).send({success:true,message:"Register Success ✅"})
+            
+        } catch (error) {
+            next(error)
+        }
     }
 }

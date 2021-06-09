@@ -26,9 +26,16 @@ module.exports = {
     addCart: async (req, res, next) => {
         try {
             console.log(req.body)
-            let queryInsert = `Insert into cart set ?`
-            queryInsert = await dbQuery(queryInsert, req.body)
-            res.status(200).send({ status: "Success✅", results: queryInsert })
+            let getCart = `Select * from cart where idproduct=${req.body.idproduct} and idstock=${req.body.idstock};`
+            getCart = await dbQuery(getCart)
+            if (getCart.length > 0) {
+                let queryUpdate = `Update cart set qty=${getCart[0].qty + req.body.qty} where idcart=${getCart[0].idcart};`
+                queryUpdate = await dbQuery(queryUpdate)
+            } else {
+                let queryInsert = `Insert into cart set ?`
+                queryInsert = await dbQuery(queryInsert, req.body)
+            }
+            res.status(200).send({ status: "Success✅" })
         } catch (error) {
             next(error)
         }
@@ -52,7 +59,7 @@ module.exports = {
     },
     getTransaksi: async (req, res, next) => {
         try {
-            let getQuery = `Select * from transactions t join status s on t.idstatus=s.idstatus ${req.params.id > 0 ? `where t.iduser=${req.params.id}`:' '};`
+            let getQuery = `Select *, u.username from transactions t join users u on t.iduser=u.iduser join status s on t.idstatus=s.idstatus ${req.params.id > 0 ? `where t.iduser=${req.params.id}` : ' '};`
             getQuery = await dbQuery(getQuery)
             // console.log(getQuery)
 
@@ -82,7 +89,7 @@ module.exports = {
             // console.log("Checkout Success ✅", insertQuery)
 
             let detailQuery = `Insert into transaction_detail (idtransaction,idproduct,idstock,qty) values ?`
-            let dataDetail = detail.map(item => [insertQuery.insertId, item.idproduct, item.idstock, item.qty])
+            let dataDetail = detail.map(item => [insertQuery.insertId, item.idproduct, item.idproduct_stock, item.qty])
             detailQuery = await dbQuery(detailQuery, [dataDetail])
             // console.log("Checkout Detail Success ✅",detailQuery)
 
@@ -101,9 +108,9 @@ module.exports = {
 /**
  * 1. Hubungkan data transaksi dengan page histroy transaction
  * 2. Tampilkan saja kolom no, tgl, invoice, total payment, status, action
- * 3. Pada sisi admin tambahkan button Confirm, 
+ * 3. Pada sisi admin tambahkan button Confirm,
  *    yg nantinya digunakan untuk merubah status dari UNPAID --> PAID
  * 4. Pada sisi admin dan user, juga tambahkan button detail utk
- *    menampilkan modal yang berisi detail transaksi beserta 
+ *    menampilkan modal yang berisi detail transaksi beserta
  *    data transaksi lainnya secara lengkap
  */
