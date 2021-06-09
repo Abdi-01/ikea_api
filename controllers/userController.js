@@ -63,30 +63,42 @@ module.exports = {
     },
     register: async (req, res, next) => {
         try {
+            // Generate OTP
+            let karakter = '0123456789abcdefghijklmnopqrstuvwxyz'
+            let OTP = ''
+
+            for (let i = 0; i < 6; i++) {
+                OTP += karakter.charAt(Math.floor(Math.random() * karakter.length))
+            }
+
             // fungsi register
-            let insertSQL = `Insert into users (username,email,password) 
-            values (${db.escape(req.body.username)},${db.escape(req.body.email)},${db.escape(req.body.password)});`
+            let insertSQL = `Insert into users (username,email,password,otp) 
+            values (${db.escape(req.body.username)},${db.escape(req.body.email)},${db.escape(req.body.password)},${db.escape(OTP)});`
 
             insertSQL = await dbQuery(insertSQL)
 
             let getUser = await dbQuery(`Select * from users where iduser=${insertSQL.insertId}`)
-            let { iduser, username, email, role, idstatus } = getUser[0]
+            let { iduser, username, email, role, idstatus, otp } = getUser[0]
+
 
             // Membuat token
 
             // Membuat config email
             //1. Konten email
             let mail = {
-                from:'Admin IKEA <alghifarfn@gmail.com>', //email pengirim, sesuai config nodemailer
-                to:email, //email penerima sesuai data Select dari database
-                subject:'[IKEA-WEB] Verification Email', //subject email
-                html:`<a href='http://localhost:3000'>Verification your email</a>` //isi dari email
+                from: 'Admin IKEA <alghifarfn@gmail.com>', //email pengirim, sesuai config nodemailer
+                to: email, //email penerima sesuai data Select dari database
+                subject: '[IKEA-WEB] Verification Email', //subject email
+                html: `<div style="text-align:'center'">
+                        <p>Your OTP<b>${otp}</b></p> 
+                        <a href='http://localhost:3000/verification'>Verification your email</a>
+                </div>` //isi dari email
             }
             // 2. Konfigurasi transporter
             await transporter.sendMail(mail)
 
-            res.status(200).send({success:true,message:"Register Success ✅"})
-            
+            res.status(200).send({ success: true, message: "Register Success ✅" })
+
         } catch (error) {
             next(error)
         }
