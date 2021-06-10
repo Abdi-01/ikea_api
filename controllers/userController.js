@@ -153,7 +153,7 @@ module.exports = {
             // 2. Konfigurasi transporter
             await transporter.sendMail(mail)
             
-            res.status(200).send({ success: true, message: "Verification Success ✅" })
+            res.status(200).send({ success: true, message: "Re-Verification Success ✅, Check your Email" })
         } catch (error) {
             next(error)
         }
