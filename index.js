@@ -2,8 +2,10 @@ const express = require('express')
 const app = express()
 const PORT = 2025
 const cors = require('cors')
+const bearerToken = require('express-bearer-token')
 
 app.use(cors())
+app.use(bearerToken())  //untuk mengambil data authorization/token dari request header yg dikirim oleh front end
 
 app.use(express.json()) // agar dapat menerima data dari req body url
 const { db } = require('./config/database')

@@ -1,5 +1,5 @@
-const { db, dbQuery } = require('../config/database')
-const transporter = require('../config/nodemailer')
+const { db, dbQuery, transporter, createToken } = require('../config')
+const Crypto = require('crypto');
 
 module.exports = {
     getUsers: (req, res) => {
@@ -71,9 +71,12 @@ module.exports = {
                 OTP += karakter.charAt(Math.floor(Math.random() * karakter.length))
             }
 
+            // hashingPassword
+            let hashPassword = Crypto.createHmac("sha256", "ikea$$$").update(req.body.password).digest("hex")
+
             // fungsi register
             let insertSQL = `Insert into users (username,email,password,otp) 
-            values (${db.escape(req.body.username)},${db.escape(req.body.email)},${db.escape(req.body.password)},${db.escape(OTP)});`
+            values (${db.escape(req.body.username)},${db.escape(req.body.email)},${db.escape(hashPassword)},${db.escape(OTP)});`
 
             insertSQL = await dbQuery(insertSQL)
 
@@ -82,6 +85,7 @@ module.exports = {
 
 
             // Membuat token
+            let token = createToken({ iduser, username, email, role, idstatus })
 
             // Membuat config email
             //1. Konten email
@@ -91,7 +95,7 @@ module.exports = {
                 subject: '[IKEA-WEB] Verification Email', //subject email
                 html: `<div style="text-align:'center'">
                         <p>Your OTP<b>${otp}</b></p> 
-                        <a href='http://localhost:3000/verification'>Verification your email</a>
+                        <a href='http://localhost:3000/verification/${token}'>Verification your email</a>
                 </div>` //isi dari email
             }
             // 2. Konfigurasi transporter
@@ -99,6 +103,13 @@ module.exports = {
 
             res.status(200).send({ success: true, message: "Register Success ✅" })
 
+        } catch (error) {
+            next(error)
+        }
+    },
+    verification: async (req, res, next) => {
+        try {
+            let sqlUpdate = `Update users set idstatus = 11 where iduser=${req.params.iduser};`
         } catch (error) {
             next(error)
         }
