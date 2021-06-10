@@ -24,8 +24,9 @@ module.exports = {
     },
     login: (req, res) => {
         if (req.body.email && req.body.password) {
+            let hashPassword = Crypto.createHmac("sha256", "ikea$$$").update(req.body.password).digest("hex")
             let getSQL = `Select * from users where 
-            email=${db.escape(req.body.email)} and password=${db.escape(req.body.password)};`
+            email=${db.escape(req.body.email)} and password=${db.escape(hashPassword)};`
 
             db.query(getSQL, (err, results) => {
                 if (err) {
@@ -109,7 +110,50 @@ module.exports = {
     },
     verification: async (req, res, next) => {
         try {
-            let sqlUpdate = `Update users set idstatus = 11 where iduser=${req.params.iduser};`
+            console.log("Hasil readToken :", req.user)
+            let sqlUpdate = `Update users set idstatus = 11 where iduser=${req.user.iduser} and otp=${db.escape(req.body.otp)};`
+            sqlUpdate = await dbQuery(sqlUpdate)
+            res.status(200).send({ success: true, message: "Verification Success ✅" })
+        } catch (error) {
+            next(error)
+        }
+    },
+    reVerification: async (req, res, next) => {
+        try {
+            let hashPassword = Crypto.createHmac("sha256", "ikea$$$").update(req.body.password).digest("hex")
+            let getUser = await dbQuery(`Select * from users where email=${db.escape(req.body.email)} and password=${db.escape(hashPassword)};`)
+            
+            let { iduser, username, email, role, idstatus } = getUser[0]
+            
+            // Generate OTP
+            let karakter = '0123456789abcdefghijklmnopqrstuvwxyz'
+            let OTP = ''
+            
+            for (let i = 0; i < 6; i++) {
+                OTP += karakter.charAt(Math.floor(Math.random() * karakter.length))
+            }
+            
+            // Update otp
+            await dbQuery(`Update users set otp=${db.escape(OTP)} where iduser=${iduser};`)
+            
+            // Membuat token
+            let token = createToken({ iduser, username, email, role, idstatus })
+            
+            // Membuat config email
+            //1. Konten email
+            let mail = {
+                from: 'Admin IKEA <alghifarfn@gmail.com>', //email pengirim, sesuai config nodemailer
+                to: email, //email penerima sesuai data Select dari database
+                subject: '[IKEA-WEB] Re-Verification Email', //subject email
+                html: `<div style="text-align:'center'">
+                <p>Hello ${username}, NEW OTP<b>${OTP}</b></p> 
+                <a href='http://localhost:3000/verification/${token}'>Re-Verification your email</a>
+                </div>` //isi dari email
+            }
+            // 2. Konfigurasi transporter
+            await transporter.sendMail(mail)
+            
+            res.status(200).send({ success: true, message: "Verification Success ✅" })
         } catch (error) {
             next(error)
         }
