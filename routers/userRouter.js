@@ -5,7 +5,7 @@ const router = express.Router()
 
 router.get('/get-all', userController.getUsers)
 router.post('/login', userController.login)
-router.post('/keep', userController.keeplogin)
+router.post('/keep', readToken, userController.keeplogin)
 router.post('/regis', userController.register)
 router.patch('/verification', readToken, userController.verification)
 router.patch('/reverification', userController.reVerification)

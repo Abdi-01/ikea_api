@@ -33,7 +33,10 @@ module.exports = {
                     res.status(500).send({ status: 'Error Mysql Login', messages: err })
                 }
                 if (results.length > 0) {
-                    res.status(200).send(results)
+                    let { iduser, username, email, role, idstatus } = results[0]
+
+                    let token = createToken({ iduser, username, email, role, idstatus })
+                    res.status(200).send({ iduser, username, email, role, idstatus, token })
                 } else {
                     res.status(404).send({ status: 'Account Not Found' })
                 }
@@ -43,17 +46,19 @@ module.exports = {
         }
     },
     keeplogin: (req, res) => {
-        console.log(req.body)
-        if (req.body.id) {
+        if (req.user.iduser) {
             let getSQL = `Select * from users where 
-            iduser=${db.escape(req.body.id)};`
+            iduser=${db.escape(req.user.iduser)};`
 
             db.query(getSQL, (err, results) => {
                 if (err) {
                     res.status(500).send({ status: 'Error Mysql Login', messages: err })
                 }
                 if (results) {
-                    res.status(200).send(results)
+                    let { iduser, username, email, role, idstatus } = results[0]
+
+                    let token = createToken({ iduser, username, email, role, idstatus })
+                    res.status(200).send({ iduser, username, email, role, idstatus, token })
                 } else {
                     res.status(404).send({ status: 'Account Not Found' })
                 }
@@ -122,23 +127,23 @@ module.exports = {
         try {
             let hashPassword = Crypto.createHmac("sha256", "ikea$$$").update(req.body.password).digest("hex")
             let getUser = await dbQuery(`Select * from users where email=${db.escape(req.body.email)} and password=${db.escape(hashPassword)};`)
-            
+
             let { iduser, username, email, role, idstatus } = getUser[0]
-            
+
             // Generate OTP
             let karakter = '0123456789abcdefghijklmnopqrstuvwxyz'
             let OTP = ''
-            
+
             for (let i = 0; i < 6; i++) {
                 OTP += karakter.charAt(Math.floor(Math.random() * karakter.length))
             }
-            
+
             // Update otp
             await dbQuery(`Update users set otp=${db.escape(OTP)} where iduser=${iduser};`)
-            
+
             // Membuat token
             let token = createToken({ iduser, username, email, role, idstatus })
-            
+
             // Membuat config email
             //1. Konten email
             let mail = {
@@ -152,7 +157,7 @@ module.exports = {
             }
             // 2. Konfigurasi transporter
             await transporter.sendMail(mail)
-            
+
             res.status(200).send({ success: true, message: "Re-Verification Success ✅, Check your Email" })
         } catch (error) {
             next(error)
