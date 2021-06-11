@@ -33,7 +33,7 @@ module.exports = {
                 queryUpdate = await dbQuery(queryUpdate)
             } else {
                 let queryInsert = `Insert into cart set ?`
-                queryInsert = await dbQuery(queryInsert, req.body)
+                queryInsert = await dbQuery(queryInsert, { iduser: req.user.iduser, ...req.body })
             }
             res.status(200).send({ status: "Success✅" })
         } catch (error) {
@@ -59,7 +59,7 @@ module.exports = {
     },
     getTransaksi: async (req, res, next) => {
         try {
-            let getQuery = `Select *, u.username from transactions t join users u on t.iduser=u.iduser join status s on t.idstatus=s.idstatus ${req.params.id > 0 ? `where t.iduser=${req.params.id}` : ' '};`
+            let getQuery = `Select *, u.username from transactions t join users u on t.iduser=u.iduser join status s on t.idstatus=s.idstatus ${req.user.iduser > 0 ? `where t.iduser=${req.user.iduser}` : ' '};`
             getQuery = await dbQuery(getQuery)
             // console.log(getQuery)
 
@@ -83,9 +83,9 @@ module.exports = {
     addCheckout: async (req, res, next) => {
         try {
             console.log(req.body)
-            let { invoice, iduser, ongkir, total_payment, note, idstatus, detail } = req.body
+            let { invoice, ongkir, total_payment, note, idstatus, detail } = req.body
             let insertQuery = `Insert into transactions set ?`
-            insertQuery = await dbQuery(insertQuery, { invoice, iduser, ongkir, total_payment, note, idstatus })
+            insertQuery = await dbQuery(insertQuery, { invoice, iduser:req.user.iduser, ongkir, total_payment, note, idstatus })
             // console.log("Checkout Success ✅", insertQuery)
 
             let detailQuery = `Insert into transaction_detail (idtransaction,idproduct,idstock,qty) values ?`
