@@ -50,61 +50,62 @@ module.exports = {
     },
     addProduct: async (req, res, next) => {
         try {
-            let postProduct = `Insert into products values (null,${db.escape(req.body.nama)},${db.escape(req.body.brand)},
-            ${db.escape(req.body.deskripsi)},${db.escape(req.body.harga)},
-            ${db.escape(req.body.idstatus)});`
-            let postImage = `Insert into product_image values `
-            let postStock = `Insert into product_stock values `
+            // let postProduct = `Insert into products values (null,${db.escape(req.body.nama)},${db.escape(req.body.brand)},
+            // ${db.escape(req.body.deskripsi)},${db.escape(req.body.harga)},
+            // ${db.escape(req.body.idstatus)});`
+            // let postImage = `Insert into product_image values `
+            // let postStock = `Insert into product_stock values `
 
-            // get all idcategory dari child->parent
-            let getIdCategory = `WITH RECURSIVE category_path (idcategory, category, parent_id) AS
-            (
-              SELECT idcategory, category, parent_id
-                FROM category
-                WHERE idcategory = ${req.body.idcategory} -- kategory paling bawah yg dipilih
-              UNION ALL
-              SELECT c.idcategory, c.category, c.parent_id
-                FROM category_path AS cp JOIN category AS c
-                  ON cp.parent_id = c.idcategory
-            )
-            SELECT * FROM category_path;`
+            // // get all idcategory dari child->parent
+            // let getIdCategory = `WITH RECURSIVE category_path (idcategory, category, parent_id) AS
+            // (
+            //   SELECT idcategory, category, parent_id
+            //     FROM category
+            //     WHERE idcategory = ${req.body.idcategory} -- kategory paling bawah yg dipilih
+            //   UNION ALL
+            //   SELECT c.idcategory, c.category, c.parent_id
+            //     FROM category_path AS cp JOIN category AS c
+            //       ON cp.parent_id = c.idcategory
+            // )
+            // SELECT * FROM category_path;`
 
-            getIdCategory = await dbQuery(getIdCategory)
-            console.log(getIdCategory)
+            // getIdCategory = await dbQuery(getIdCategory)
+            // console.log(getIdCategory)
 
-            postProduct = await dbQuery(postProduct)
-            if (postProduct.insertId) {
-                // query untuk insert data ke table product_category
-                getIdCategory = getIdCategory.map(item => [postProduct.insertId, item.idcategory])
+            // postProduct = await dbQuery(postProduct)
+            // if (postProduct.insertId) {
+            //     // query untuk insert data ke table product_category
+            //     getIdCategory = getIdCategory.map(item => [postProduct.insertId, item.idcategory])
 
-                await dbQuery(`insert into product_category (idproduct,idcategory) values ?`, [getIdCategory])
-                // menjalankan insert untuk product_img dan product_stck
-                let dataStock = []
-                req.body.stock.forEach(item => {
-                    dataStock.push(`(null,${postProduct.insertId},${db.escape(item.type)},${db.escape(item.qty)},${db.escape(req.body.idstatus)})`)
-                })
-                await dbQuery(postStock + dataStock)
+            //     await dbQuery(`insert into product_category (idproduct,idcategory) values ?`, [getIdCategory])
+            //     // menjalankan insert untuk product_img dan product_stck
+            //     let dataStock = []
+            //     req.body.stock.forEach(item => {
+            //         dataStock.push(`(null,${postProduct.insertId},${db.escape(item.type)},${db.escape(item.qty)},${db.escape(req.body.idstatus)})`)
+            //     })
+            //     await dbQuery(postStock + dataStock)
 
-                // upload image 
-                let dataImg = []
-                req.body.images.forEach(item => {
-                    dataImg.push(`(null,${postProduct.insertId},${db.escape(item)})`)
-                })
-                await dbQuery(postImage + dataImg)
+            //     // upload image 
+            //     let dataImg = []
+            //     req.body.images.forEach(item => {
+            //         dataImg.push(`(null,${postProduct.insertId},${db.escape(item)})`)
+            //     })
+            //     await dbQuery(postImage + dataImg)
 
-                const upload = uploader('/images', 'IMG').fields([{ name: 'images' }])
+            const upload = uploader('/images', 'IMG').fields([{ name: 'images' }])
 
-                upload(req, res, (error) => {
-                    if (error) {
-                        next(error)
-                    }
+            upload(req, res, (error) => {
+                if (error) {
+                    next(error)
+                }
 
-                    const { images } = req.files
-                    console.log("cek file upload :",images)
-                })
+                const { images } = req.files
+                console.log("cek file upload :", images)
+                console.log(JSON.parse(req.body.data))
+            })
 
-                res.status(200).send("Insert product success ✅")
-            }
+            // res.status(200).send("Insert product success ✅")
+            // }
         } catch (error) {
             res.status(500).send({ status: 'Error Mysql', messages: error })
         }
