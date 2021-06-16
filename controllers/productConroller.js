@@ -1,4 +1,4 @@
-const { db, dbQuery } = require('../config/database')
+const { db, dbQuery, uploader } = require('../config')
 
 module.exports = {
     getProducts: async (req, res) => {
@@ -48,7 +48,7 @@ module.exports = {
             res.status(500).send({ status: 'Error Mysql', messages: error })
         }
     },
-    addProduct: async (req, res) => {
+    addProduct: async (req, res, next) => {
         try {
             let postProduct = `Insert into products values (null,${db.escape(req.body.nama)},${db.escape(req.body.brand)},
             ${db.escape(req.body.deskripsi)},${db.escape(req.body.harga)},
@@ -75,20 +75,33 @@ module.exports = {
             postProduct = await dbQuery(postProduct)
             if (postProduct.insertId) {
                 // query untuk insert data ke table product_category
-                getIdCategory =  getIdCategory.map(item=>[postProduct.insertId,item.idcategory])
+                getIdCategory = getIdCategory.map(item => [postProduct.insertId, item.idcategory])
 
-                await dbQuery(`insert into product_category (idproduct,idcategory) values ?`,[getIdCategory])
+                await dbQuery(`insert into product_category (idproduct,idcategory) values ?`, [getIdCategory])
                 // menjalankan insert untuk product_img dan product_stck
-                let dataImg = []
-                req.body.images.forEach(item => {
-                    dataImg.push(`(null,${postProduct.insertId},${db.escape(item)})`)
-                })
                 let dataStock = []
                 req.body.stock.forEach(item => {
                     dataStock.push(`(null,${postProduct.insertId},${db.escape(item.type)},${db.escape(item.qty)},${db.escape(req.body.idstatus)})`)
                 })
-                await dbQuery(postImage + dataImg)
                 await dbQuery(postStock + dataStock)
+
+                // upload image 
+                let dataImg = []
+                req.body.images.forEach(item => {
+                    dataImg.push(`(null,${postProduct.insertId},${db.escape(item)})`)
+                })
+                await dbQuery(postImage + dataImg)
+
+                const upload = uploader('/images', 'IMG').fields([{ name: 'images' }])
+
+                upload(req, res, (error) => {
+                    if (error) {
+                        next(error)
+                    }
+
+                    const { images } = req.files
+                    console.log("cek file upload :",images)
+                })
 
                 res.status(200).send("Insert product success ✅")
             }
